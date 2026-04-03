@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/api/auth/(.*)", "destination": "/api/auth" },
+    { "source": "/api/public/(.*)", "destination": "/api/public" },
+    { "source": "/api/customer/(.*)", "destination": "/api/customer" },
+    { "source": "/api/business/(.*)", "destination": "/api/business" },
+    { "source": "/api/admin/(.*)", "destination": "/api/admin" },
+    { "source": "/api/notifications/(.*)", "destination": "/api/notifications" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
