@@ -854,28 +854,76 @@ export default async function handler(req: AuthenticatedRequest, res: VercelResp
         const result = await pool.query('SELECT * FROM gift_cards WHERE business_id = $1 ORDER BY created_at DESC', [businessId]);
         return res.json(result.rows);
       } catch (error) {
-        return res.status(500).json({ message: 'Server error' });
+        console.error('Error fetching gift cards:', error);
+        return res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : String(error) });
       }
     }
     if (req.method === 'POST') {
       try {
         const { sender_name, recipient_mobile, message, service_id, price } = req.body;
+        
+        console.log('Creating gift card:', { 
+          businessId, 
+          sender_name, 
+          recipient_mobile, 
+          message, 
+          service_id, 
+          price 
+        });
+        
+        // Generate a unique code for the gift card
+        const code = 'GC' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        
         const result = await pool.query(
-          'INSERT INTO gift_cards (business_id, sender_name, recipient_mobile, message, service_id, price) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-          [businessId, sender_name, recipient_mobile, message, service_id, price]
+          `INSERT INTO gift_cards (
+            business_id, 
+            sender_name, 
+            recipient_mobile, 
+            message, 
+            service_id, 
+            price,
+            code,
+            type,
+            initial_value,
+            current_balance,
+            expiry_date
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+          [
+            businessId, 
+            sender_name, 
+            recipient_mobile, 
+            message || '', 
+            service_id || null, 
+            price || 0,
+            code,
+            'service',
+            price || 0,
+            price || 0,
+            new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
+          ]
         );
+        console.log('Gift card created successfully:', result.rows[0].id);
         return res.status(201).json(result.rows[0]);
       } catch (error) {
-        return res.status(500).json({ message: 'Server error' });
+        console.error('Error creating gift card:', error);
+        return res.status(500).json({ 
+          message: 'Server error',
+          error: error instanceof Error ? error.message : String(error),
+          details: (error as any)?.detail || (error as any)?.message || 'Unknown database error'
+        });
       }
     }
     if (req.method === 'DELETE') {
       try {
         const id = url.split('/').pop();
+        if (!id) {
+          return res.status(400).json({ message: 'Gift card ID required' });
+        }
         await pool.query('DELETE FROM gift_cards WHERE id = $1 AND business_id = $2', [id, businessId]);
         return res.json({ message: 'Deleted' });
       } catch (error) {
-        return res.status(500).json({ message: 'Server error' });
+        console.error('Error deleting gift card:', error);
+        return res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : String(error) });
       }
     }
   }
