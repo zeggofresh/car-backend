@@ -431,8 +431,15 @@ export default async function handler(req: AuthenticatedRequest, res: VercelResp
   if (url.includes('/requests')) {
     if (req.method === 'GET') {
       try {
+        console.log('=== FETCHING SERVICE REQUESTS ===');
+        console.log('User ID:', req.user?.id);
+        console.log('Business ID:', businessId);
+        console.log('User Role:', req.user?.role);
+        console.log('Is Super Admin:', isSuperAdmin);
+        
         // Check if status filter is provided in query params
         const statusFilter = url.split('status=')[1]?.split('&')[0];
+        console.log('Status Filter:', statusFilter || 'none (showing all)');
         
         let query = `
           SELECT sr.*, u.name as customer_name, s.name_en as service_name, s.price as service_price, b.name as business_name
@@ -451,7 +458,21 @@ export default async function handler(req: AuthenticatedRequest, res: VercelResp
         
         query += ' ORDER BY sr.created_at DESC';
         
+        console.log('Executing query:', query);
+        console.log('Query params:', params);
+        
         const result = await pool.query(query, params);
+        
+        console.log(`Query returned ${result.rows.length} requests`);
+        if (result.rows.length > 0) {
+          console.log('First request:', {
+            id: result.rows[0].id,
+            business: result.rows[0].business_name,
+            customer: result.rows[0].customer_name,
+            status: result.rows[0].status
+          });
+        }
+        
         return res.json(result.rows || []);
       } catch (error) {
         console.error('Error fetching requests:', error);
