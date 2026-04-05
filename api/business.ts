@@ -432,13 +432,13 @@ export default async function handler(req: AuthenticatedRequest, res: VercelResp
     if (req.method === 'GET') {
       try {
         const result = await pool.query(`
-          SELECT sr.*, u.name as customer_name, s.name_en as service_name, s.price as service_price
+          SELECT sr.*, u.name as customer_name, s.name_en as service_name, s.price as service_price, b.name as business_name
           FROM service_requests sr
           LEFT JOIN users u ON sr.user_id = u.id
           LEFT JOIN services s ON sr.service_id = s.id
-          WHERE sr.business_id = $1
+          LEFT JOIN businesses b ON sr.business_id = b.id
           ORDER BY sr.created_at DESC
-        `, [businessId]);
+        `);
         return res.json(result.rows || []);
       } catch (error) {
         console.error('Error fetching requests:', error);
